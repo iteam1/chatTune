@@ -6,3 +6,5 @@ autogen-core
 autogen-agentchat
 autogen_ext[openai]
 python-dotenv
+playwright
+agentops

@@ -62,7 +62,7 @@ class MusicSearchQuery(BaseModel):
     
     class Config:
         use_enum_values = True  # Use string values instead of enum objects
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "mood": "Happy",
                 "energy_level": 75,
