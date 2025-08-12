@@ -7,6 +7,11 @@
 - Auto suggest music based on your conversation
 - Support monitor Agent workflow
 
+## Tech Stack
+- [Pydantic](https://docs.pydantic.dev/latest/)
+- [FastAPI](https://fastapi.tiangolo.com/)
+- [Autogen](https://microsoft.github.io/autogen/stable//index.html)
+
 ## References
 
 [MusicbyMood](https://www.musicbymood.com)
