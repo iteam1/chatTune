@@ -1,0 +1,8 @@
+fastapi
+uvicorn[standard]
+aiofiles
+PyYAML
+autogen-core
+autogen-agentchat
+autogen_ext[openai]
+python-dotenv
