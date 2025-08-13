@@ -51,14 +51,22 @@ class MusicByMoodScraper:
     async def apply_query(self, query: MusicSearchQuery):
         assert self._page
         page = self._page
+        
+        print(f"DEBUG: Applying query - mood: {query.mood}, energy: {query.energy_level}, happiness: {query.happiness_level}, genres: {query.genres}")
 
         # 1) Click mood button if provided
         if query.mood:
+            print(f"DEBUG: Clicking mood button: {query.mood}")
             try:
                 await page.get_by_role("button", name=str(query.mood)).click(timeout=3000)
-            except Exception:
-                # Fallback: text locator
-                await page.get_by_text(str(query.mood), exact=True).click(timeout=3000)
+                print(f"DEBUG: Successfully clicked mood button: {query.mood}")
+            except Exception as e:
+                print(f"DEBUG: Failed to click mood button with role, trying text locator: {e}")
+                try:
+                    await page.get_by_text(str(query.mood), exact=True).click(timeout=3000)
+                    print(f"DEBUG: Successfully clicked mood button with text locator: {query.mood}")
+                except Exception as e2:
+                    print(f"DEBUG: Failed to click mood button entirely: {e2}")
 
         # 2) Adjust sliders (Energy, Happiness) if provided
         # The page renders custom sliders with role=slider; Energy is first, Happiness is second
@@ -93,23 +101,30 @@ class MusicByMoodScraper:
                     pass
 
         if query.energy_level is not None:
+            print(f"DEBUG: Setting energy slider to {query.energy_level}%")
             await set_slider(0, int(query.energy_level))
         if query.happiness_level is not None:
+            print(f"DEBUG: Setting happiness slider to {query.happiness_level}%")
             await set_slider(1, int(query.happiness_level))
 
         # 3) Select genres
         if query.genres:
+            print(f"DEBUG: Selecting genres: {query.genres}")
             for g in query.genres:
                 # Site genres appear lower-case; map enum to lower-case label
                 label = str(g).lower()
+                print(f"DEBUG: Trying to click genre: {label}")
                 try:
                     await page.locator("div", has_text=label).first.click(timeout=2000)
-                except Exception:
+                    print(f"DEBUG: Successfully clicked genre: {label}")
+                except Exception as e:
+                    print(f"DEBUG: Failed to click genre with div locator: {e}")
                     # Fallback: text locator anywhere
                     try:
                         await page.get_by_text(label).first.click(timeout=1500)
-                    except Exception:
-                        pass
+                        print(f"DEBUG: Successfully clicked genre with text locator: {label}")
+                    except Exception as e2:
+                        print(f"DEBUG: Failed to click genre entirely: {e2}")
 
         # 4) Trigger search
         try:
@@ -121,11 +136,12 @@ class MusicByMoodScraper:
         # Wait for results to appear: prefer the heading "Recommended for your mood"
         try:
             await page.get_by_text("Recommended for your mood").wait_for(timeout=10000)
-            # Wait a bit more for the song list to populate
-            await page.wait_for_timeout(3000)
+            # Wait longer for the song list to populate after UI changes
+            print("DEBUG: Waiting for results to update after query...")
+            await page.wait_for_timeout(5000)
         except Exception:
             # Fallback: longer delay to ensure content loads
-            await page.wait_for_timeout(5000)
+            await page.wait_for_timeout(7000)
 
     async def extract_results(self, limit: int = 20) -> List[Song]:
         assert self._page
@@ -301,10 +317,10 @@ if __name__ == "__main__":
     async def _demo():
         # Example run
         example = MusicSearchQuery(
-            mood=MoodEnum.ENERGETIC,
-            energy_level=70,
-            happiness_level=70,
-            genres=[GenreEnum.COUNTRY]
+            mood=MoodEnum.RELAXED,
+            energy_level=10,
+            happiness_level=20,
+            genres=[GenreEnum.DANCE]
         )
         res = await search_music_by_mood(example, headless=True, limit=10)
         for i, s in enumerate(res, 1):
