@@ -1,9 +1,11 @@
+import os
 import logging
 from dotenv import load_dotenv
 load_dotenv()
 
 import json
 import aiofiles
+import agentops
 
 from pathlib import Path
 from typing import Any
@@ -18,12 +20,18 @@ from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 
 from src.utils import get_chat_agent, get_history
 
+# Initialize paths
 model_config_path = Path("model_config.yaml")
 state_path = Path("chat_agent_state.json")
 history_path = Path("chat_agent_history.json")
 
+# Initialize logger
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
+# Initialize AgentOps
+AGENTOPS_API_KEY = os.getenv("AGENTOPS_API_KEY") 
+agentops.init(AGENTOPS_API_KEY) 
 
 # Initialize FastAPI app
 app = FastAPI()

@@ -4,7 +4,7 @@ import asyncio
 from dataclasses import dataclass, asdict
 from typing import List, Optional, Dict, Any, Union
 from playwright.async_api import async_playwright, Page
-from models import MusicSearchQuery, MoodEnum, GenreEnum
+from src.models import MusicSearchQuery, MoodEnum, GenreEnum
 
 @dataclass
 class Song:
