@@ -19,7 +19,8 @@ async def get_chat_agent(model_config_path: Path,
     """
     # Load model config
     async with aiofiles.open(model_config_path, 'r') as f:
-        model_config = yaml.safe_load(f)
+        content = await f.read()
+        model_config = yaml.safe_load(content)
 
     model_client = OpenAIChatCompletionClient.load_component(model_config)
    
