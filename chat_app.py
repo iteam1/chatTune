@@ -85,15 +85,9 @@ async def chat(websocket: WebSocket):
             # Extract response content safely
             response_content = "I'm sorry, I couldn't generate a response."
             
+            # Extract response content from response 
             try:
-                if hasattr(response, 'chat_message') and response.chat_message:
-                    response_content = response.chat_message.content
-                elif hasattr(response, 'content'):
-                    response_content = response.content
-                elif isinstance(response, str):
-                    response_content = response
-                else:
-                    logger.warning(f"Unexpected response structure: {response}")
+                response_content = response.chat_message.content
             except Exception as e:
                 logger.error(f"Error extracting response content: {e}")
 
@@ -113,6 +107,7 @@ async def chat(websocket: WebSocket):
                 "source": "assistant"
             }
 
+            # Send response back to client
             await websocket.send_json(response_data)
             
     except WebSocketDisconnect:
