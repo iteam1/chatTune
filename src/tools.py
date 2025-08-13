@@ -7,7 +7,6 @@ from playwright.async_api import async_playwright, Page
 
 from models import MusicSearchQuery, MoodEnum, GenreEnum
 
-
 @dataclass
 class Song:
     title: str
