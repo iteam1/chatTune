@@ -316,10 +316,10 @@ if __name__ == "__main__":
     async def _demo():
         # Example run
         example = MusicSearchQuery(
-            mood=MoodEnum.RELAXED,
-            energy_level=10,
-            happiness_level=20,
-            genres=[GenreEnum.DANCE]
+            mood=MoodEnum.HAPPY,
+            energy_level=50,
+            happiness_level=50,
+            genres=[GenreEnum.DANCE, GenreEnum.CLASSICAL]
         )
         res = await search_music_by_mood(example, headless=True, limit=10)
         for i, s in enumerate(res, 1):
