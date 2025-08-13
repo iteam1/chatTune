@@ -1,4 +1,5 @@
 import asyncio
+import re
 from dataclasses import dataclass, asdict
 from typing import List, Optional, Dict, Any
 
@@ -117,13 +118,114 @@ class MusicByMoodScraper:
             # Fallback: click by text
             await page.get_by_text("Find My Music").click(timeout=5000)
 
-        # Wait briefly for results panel to populate
-        await page.wait_for_timeout(2000)
+        # Wait for results to appear: prefer the heading "Recommended for your mood"
+        try:
+            await page.get_by_text("Recommended for your mood").wait_for(timeout=10000)
+            # Wait a bit more for the song list to populate
+            await page.wait_for_timeout(3000)
+        except Exception:
+            # Fallback: longer delay to ensure content loads
+            await page.wait_for_timeout(5000)
 
     async def extract_results(self, limit: int = 20) -> List[Song]:
         assert self._page
         page = self._page
         songs: List[Song] = []
+
+        # Parse the "Recommended for your mood" section by grouping lines into entries
+        def _looks_like_duration(s: str) -> bool:
+            return bool(re.match(r"^\d{1,2}:\d{2}$", s))
+
+        def _looks_like_genre(s: str) -> bool:
+            # Accept mostly lowercase words with letters, spaces, '&' and apostrophes, exclude durations
+            if _looks_like_duration(s):
+                return False
+            return s == s.lower() and any(c.isalpha() for c in s)
+
+        def _looks_like_new_title(s: str) -> bool:
+            # Titles typically contain uppercase or are not all lowercase
+            # Also exclude obvious genre words and durations
+            if _looks_like_duration(s):
+                return False
+            if _looks_like_genre(s):
+                return False
+            # Accept any string that has uppercase letters or mixed case
+            return any(c.isupper() for c in s)
+
+        try:
+            # Try multiple selectors to find the results container
+            selectors_to_try = [
+                ".order-1.md\\:order-2, .md\\:order-2",
+                "div:has-text('Recommended for your mood')",
+                "body",  # Fallback to full page
+            ]
+            
+            text = ""
+            for selector in selectors_to_try:
+                try:
+                    container = page.locator(selector).first
+                    text = (await container.inner_text()) or ""
+                    if "Recommended for your mood" in text and len(text) > 100:
+                        break
+                except Exception:
+                    continue
+            
+            lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
+            
+
+            # Start from the heading if present
+            try:
+                start_idx = lines.index("Recommended for your mood") + 1
+            except ValueError:
+                start_idx = 0
+
+            i = start_idx
+            seen_pairs = set()
+            while i < len(lines) and len(songs) < limit:
+                title = lines[i]
+                # Guard against non-title noise
+                if not _looks_like_new_title(title):
+                    i += 1
+                    continue
+                i += 1
+                if i >= len(lines):
+                    break
+                artist = lines[i]
+                i += 1
+                
+
+                genres: List[str] = []
+                duration: Optional[str] = None
+                # Collect genres until duration or next title-like line
+                while i < len(lines):
+                    token = lines[i]
+                    if _looks_like_duration(token):
+                        duration = token
+                        i += 1
+                        break
+                    if _looks_like_genre(token):
+                        genres.append(token)
+                        i += 1
+                        continue
+                    # Probably next card begins
+                    if _looks_like_new_title(token):
+                        break
+                    # Unknown token, move on
+                    i += 1
+
+                key = (title, artist)
+                if key not in seen_pairs:
+                    seen_pairs.add(key)
+                    songs.append(Song(title=title, artist=artist, extra={
+                        "genres": genres,
+                        "duration": duration,
+                    }))
+
+            if songs:
+                return songs[:limit]
+        except Exception:
+            # Fall back to heuristics below
+            pass
 
         # Heuristic 1: right panel container (results) – grab links or card texts
         try:
@@ -195,21 +297,19 @@ async def search_music_by_mood(query: MusicSearchQuery, *, headless: bool = True
         return results
 
 
-def format_song_results(songs: List[Song]) -> List[Dict[str, Any]]:
-    return [asdict(s) for s in songs]
-
-
 if __name__ == "__main__":
     async def _demo():
         # Example run
         example = MusicSearchQuery(
-            mood=MoodEnum.HAPPY,
-            energy_level=75,
-            happiness_level=80,
-            genres=[GenreEnum.POP, GenreEnum.ELECTRONIC]
+            mood=MoodEnum.ENERGETIC,
+            energy_level=70,
+            happiness_level=70,
+            genres=[GenreEnum.COUNTRY]
         )
-        res = await search_music_by_mood(example, headless=False, limit=10)
+        res = await search_music_by_mood(example, headless=True, limit=10)
         for i, s in enumerate(res, 1):
-            print(f"{i:02d}. {s.title} - {s.artist or ''} {s.link or ''}")
+            genres = ", ".join((s.extra or {}).get("genres", []))
+            duration = (s.extra or {}).get("duration", "")
+            print(f"{i:02d}. {s.title} — {s.artist or ''} | genres: {genres} | duration: {duration} {s.link or ''}")
 
     asyncio.run(_demo())
