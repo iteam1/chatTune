@@ -14,6 +14,8 @@
 - [AgentOps](https://www.agentops.ai/)
 - [Socket.IO](https://socket.io/)
 
+**Note**: You may need to run `playwright install` once before first use.
+
 ## References
 
 [MusicbyMood](https://www.musicbymood.com)

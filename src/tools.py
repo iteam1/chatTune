@@ -1,10 +1,9 @@
-import asyncio
 import re
+import json
+import asyncio
 from dataclasses import dataclass, asdict
-from typing import List, Optional, Dict, Any
-
+from typing import List, Optional, Dict, Any, Union
 from playwright.async_api import async_playwright, Page
-
 from models import MusicSearchQuery, MoodEnum, GenreEnum
 
 @dataclass
@@ -300,11 +299,25 @@ class MusicByMoodScraper:
         return songs[:limit]
 
 
-async def search_music_by_mood(query: MusicSearchQuery, *, headless: bool = True, limit: int = 20) -> List[Song]:
+async def search_music_by_mood(mood: Optional[str] = None, energy_level: Optional[int] = None, happiness_level: Optional[int] = None, genres: Optional[list] = None, headless: bool = True, limit: int = 20) -> List[Song]:
     """High-level utility to search songs on MusicByMood from a MusicSearchQuery.
 
-    Note: You may need to run `playwright install` once before first use.
+    Args:
+        mood: The mood (e.g., "Happy", "Sad", "Energetic", "Relaxed", "Focused")
+        energy_level: Energy level from 0 (Calm) to 100 (Energetic)
+        happiness_level: Happiness level from 0 (Melancholic) to 100 (Joyful)
+        genres: List of music genres to filter by
+        headless: Whether to run browser in headless mode
+        limit: Maximum number of songs to return
     """
+    # Convert individual parameters to MusicSearchQuery
+    query = MusicSearchQuery(
+        mood=mood,
+        energy_level=energy_level,
+        happiness_level=happiness_level,
+        genres=genres
+    )
+
     async with MusicByMoodScraper(headless=headless) as scraper:
         await scraper.goto()
         await scraper.apply_query(query)
@@ -314,14 +327,16 @@ async def search_music_by_mood(query: MusicSearchQuery, *, headless: bool = True
 
 if __name__ == "__main__":
     async def _demo():
+
         # Example run
-        example = MusicSearchQuery(
-            mood=MoodEnum.HAPPY,
+        res = await search_music_by_mood(
+            mood="Happy",
             energy_level=50,
             happiness_level=50,
-            genres=[GenreEnum.DANCE, GenreEnum.CLASSICAL]
+            genres=[GenreEnum.DANCE.value, GenreEnum.CLASSICAL.value],
+            headless=True,
+            limit=10
         )
-        res = await search_music_by_mood(example, headless=True, limit=10)
         for i, s in enumerate(res, 1):
             genres = ", ".join((s.extra or {}).get("genres", []))
             duration = (s.extra or {}).get("duration", "")
