@@ -122,6 +122,55 @@
             color: #333;
             margin-bottom: 20px;
         }
+
+        /* Loading indicator styles */
+        .loading-indicator {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            margin: 10px 0;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+        }
+
+        .loading-text {
+            margin-right: 10px;
+            color: #6c757d;
+            font-style: italic;
+        }
+
+        .typing-dots {
+            display: flex;
+            gap: 4px;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            background-color: #007bff;
+            border-radius: 50%;
+            animation: typing 1.4s infinite ease-in-out;
+        }
+
+        .typing-dot:nth-child(1) {
+            animation-delay: -0.32s;
+        }
+
+        .typing-dot:nth-child(2) {
+            animation-delay: -0.16s;
+        }
+
+        @keyframes typing {
+            0%, 80%, 100% {
+                transform: scale(0.8);
+                opacity: 0.5;
+            }
+            40% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
     </style>
 </head>
 
@@ -142,12 +191,16 @@
         ws.onmessage = function (event) {
             const message = JSON.parse(event.data);
             
+            // Hide loading indicator
+            hideLoadingIndicator();
+            
             // Display the message from the assistant
             displayMessage(message.content, 'assistant');
             enableInput();
         };
 
         ws.onerror = function(error) {
+            hideLoadingIndicator();
             displayMessage("WebSocket error occurred. Please refresh the page.", 'error');
             enableInput();
         };
@@ -175,6 +228,9 @@
             // Clear input and disable until response is received
             input.value = '';
             disableInput();
+
+            // Show loading indicator
+            showLoadingIndicator();
 
             // Send message to WebSocket
             ws.send(JSON.stringify({ 
@@ -240,6 +296,34 @@
             } catch (error) {
                 console.error('Error loading history:', error);
                 displayMessage("Welcome to chatTune! How can I help you today?", 'system');
+            }
+        }
+
+        // Show loading indicator
+        function showLoadingIndicator() {
+            const messagesContainer = document.getElementById('messages');
+            const loadingElement = document.createElement('div');
+            loadingElement.id = 'loading-indicator';
+            loadingElement.className = 'loading-indicator';
+            
+            loadingElement.innerHTML = `
+                <span class="loading-text">chatTune is thinking</span>
+                <div class="typing-dots">
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                </div>
+            `;
+            
+            messagesContainer.appendChild(loadingElement);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        // Hide loading indicator
+        function hideLoadingIndicator() {
+            const loadingElement = document.getElementById('loading-indicator');
+            if (loadingElement) {
+                loadingElement.remove();
             }
         }
 
