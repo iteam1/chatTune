@@ -12,7 +12,7 @@
 - [FastAPI](https://fastapi.tiangolo.com/)
 - [Autogen](https://microsoft.github.io/autogen/stable//index.html)
 - [AgentOps](https://www.agentops.ai/)
-- [Socket.IO](https://socket.io/)
+- [WebSocket](https://fastapi.tiangolo.com/advanced/websockets/)
 
 **Note**: You may need to run `playwright install` once before first use.
 
